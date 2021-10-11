@@ -331,48 +331,69 @@ scriptElem.text = `
       }
     }
 
+    function deflash(vtt) {
+      let final = vtt;
+      const timecodeRe = /\\d{2}:\\d{2}:\\d{2}.\\d{3}/g;
+      console.log(vtt);
+      console.log(timecodeRe);
+      const matches = [...vtt.matchAll(timecodeRe)].flat();
+      console.log(matches);
+      // Replace all trailing timecodes with the next line's starting
+      matches.forEach((match, index) => {
+        if (index % 2 == 1) {
+          final = final.replace(match, matches[index + 1]);
+        }
+      });
+
+      return final;
+    }
+
     function addTrackElem(videoElem, blob, srclang) {
-      const trackElem = document.createElement('track');
-      trackElem.id = TRACK_ELEM_ID;
-      trackElem.src = URL.createObjectURL(blob);
-      trackElem.kind = 'subtitles';
-      trackElem.default = true;
-      trackElem.srclang = srclang;
-      videoElem.appendChild(trackElem);
-      trackElem.track.mode = 'hidden'; // this can only be set after appending
+      blob.text().then((vtt) => {
+        const modified = deflash(vtt);
+        const blob2 = new Blob([modified], { type: 'text/vtt' });
+        const trackElem = document.createElement('track');
+        trackElem.id = TRACK_ELEM_ID;
+        trackElem.src = URL.createObjectURL(blob2);
+        trackElem.kind = 'subtitles';
+        trackElem.default = true;
+        trackElem.srclang = srclang;
+        videoElem.appendChild(trackElem);
+        trackElem.track.mode = 'hidden'; // this can only be set after appending
 
-      trackElem.addEventListener('load', function() {
-        enableDownloadButton();
-      }, false);
+        trackElem.addEventListener('load', function() {
+          enableDownloadButton();
+        }, false);
 
-      const customSubsElem = document.createElement('div');
-      customSubsElem.id = CUSTOM_SUBS_ELEM_ID;
-      customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; -moz-user-select: text; z-index: 100; pointer-events: none';
+        const customSubsElem = document.createElement('div');
+        customSubsElem.id = CUSTOM_SUBS_ELEM_ID;
+        customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; -moz-user-select: text; z-index: 100; pointer-events: none';
 
-      trackElem.addEventListener('cuechange', function(e) {
-        // Remove all children
-        while (customSubsElem.firstChild) {
-          customSubsElem.removeChild(customSubsElem.firstChild);
+        trackElem.addEventListener('cuechange', function(e) {
+          // Remove all children
+          while (customSubsElem.firstChild) {
+            customSubsElem.removeChild(customSubsElem.firstChild);
+          }
+
+          const track = e.target.track;
+          // console.log('active now', track.activeCues);
+          for (const cue of track.activeCues) {
+            const cueElem = document.createElement('div');
+            cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
+            cueElem.innerHTML = vttTextToSimple(cue.text, true); // may contain simple tags like <i> etc.
+            customSubsElem.appendChild(cueElem);
+          }
+        }, false);
+
+        // Appending this to the player rather than the document changes details of behavior.
+        const playerElem = document.querySelector('.watch-video');
+        if (!playerElem) {
+          throw new Error("Couldn't find player element to append subtitles to");
         }
+        playerElem.appendChild(customSubsElem);
 
-        const track = e.target.track;
-        // console.log('active now', track.activeCues);
-        for (const cue of track.activeCues) {
-          const cueElem = document.createElement('div');
-          cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
-          cueElem.innerHTML = vttTextToSimple(cue.text, true); // may contain simple tags like <i> etc.
-          customSubsElem.appendChild(cueElem);
-        }
-      }, false);
-
-      // Appending this to the player rather than the document changes details of behavior.
-      const playerElem = document.querySelector('.watch-video');
-      if (!playerElem) {
-        throw new Error("Couldn't find player element to append subtitles to");
-      }
-      playerElem.appendChild(customSubsElem);
-
-      updateToggleDisplay();
+        updateToggleDisplay();
+      });
     }
 
     function removeTrackElem() {
