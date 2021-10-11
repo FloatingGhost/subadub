@@ -334,10 +334,7 @@ scriptElem.text = `
     function deflash(vtt) {
       let final = vtt;
       const timecodeRe = /\\d{2}:\\d{2}:\\d{2}.\\d{3}/g;
-      console.log(vtt);
-      console.log(timecodeRe);
       const matches = [...vtt.matchAll(timecodeRe)].flat();
-      console.log(matches);
       // Replace all trailing timecodes with the next line's starting
       matches.forEach((match, index) => {
         if (index % 2 == 1) {
