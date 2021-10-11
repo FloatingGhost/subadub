@@ -331,14 +331,31 @@ scriptElem.text = `
       }
     }
 
+    function timeToSecs(t) {
+      const parts = t.split(':').map(parseFloat).reverse();
+      return parts.map((part, power) => (
+        part * Math.pow(60, power)
+      )).reduce((a, b) => a + b, 0);
+    }
+
+    function shouldDeflash(t1, t2) {
+      // If <1 sec between, merge
+      if (t2 === undefined) return false;
+      return Math.abs(timeToSecs(t1) - timeToSecs(t2)) < 1
+    }
+
     function deflash(vtt) {
       let final = vtt;
-      const timecodeRe = /\\d{2}:\\d{2}:\\d{2}.\\d{3}/g;
-      const matches = [...vtt.matchAll(timecodeRe)].flat();
+      const timecodeRe = /(\\d{2}:){2,3}\\d{2}.\\d{3}/g;
+      const matches = [...vtt.matchAll(timecodeRe)].map(x => x[0]);
+      console.log(matches);
+      console.log(timecodeRe);
+      console.log(vtt);
       // Replace all trailing timecodes with the next line's starting
       matches.forEach((match, index) => {
-        if (index % 2 == 1) {
-          final = final.replace(match, matches[index + 1]);
+        const next = matches[index + 1];
+        if ((index % 2 == 1) && shouldDeflash(match, next)) {
+          final = final.replace(match, next);
         }
       });
 

@@ -1,6 +1,6 @@
  {
   "manifest_version": 2,
-  "name": "Subadub",
+  "name": "Subadub-deflasher",
   "description" : "Enhanced Netflix subtitles for foreign language study",
   "version": "0.1.8",
   "icons": {
