@@ -348,9 +348,6 @@ scriptElem.text = `
       let final = vtt;
       const timecodeRe = /(\\d{2}:){2,3}\\d{2}.\\d{3}/g;
       const matches = [...vtt.matchAll(timecodeRe)].map(x => x[0]);
-      console.log(matches);
-      console.log(timecodeRe);
-      console.log(vtt);
       // Replace all trailing timecodes with the next line's starting
       matches.forEach((match, index) => {
         const next = matches[index + 1];
